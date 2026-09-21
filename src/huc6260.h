@@ -101,6 +101,8 @@ private:
     void LogVceEvent(u8 event);
     void InitPalettes();
     void AdjustForMultipleDividers();
+    template <bool is_sgx, int speed>
+    bool ClockTemplate(u32 cycles);
     template <bool is_sgx>
     void RenderFrame();
     template <bool SGX, int BPP>

@@ -31,17 +31,40 @@ INLINE void HuC6260::TraceVceEvent(u8 event)
         LogVceEvent(event);
 }
 
+// The VCE speed (and the clock divider and line width derived from it) can only
+// change from a VCE control register write or SanitizeState, both of which run
+// between Clock() calls, never inside the loop below. Specialising the loop on
+// m_speed therefore turns the divider selection and the line width lookup into
+// compile-time constants without changing behaviour.
 template <bool is_sgx>
 INLINE bool HuC6260::Clock(u32 cycles)
 {
+    switch (m_speed)
+    {
+        case 0:
+            return ClockTemplate<is_sgx, 0>(cycles);
+        case 1:
+            return ClockTemplate<is_sgx, 1>(cycles);
+        case 2:
+            return ClockTemplate<is_sgx, 2>(cycles);
+        default:
+            return ClockTemplate<is_sgx, 3>(cycles);
+    }
+}
+
+template <bool is_sgx, int speed>
+INLINE bool HuC6260::ClockTemplate(u32 cycles)
+{
+    const s32 clock_divider = (speed == 0) ? 4 : (speed == 1) ? 3 : 2;
+    const int full_line_width = k_huc6260_full_line_width[speed];
     bool frame_ready = false;
 
     while (cycles > 0)
     {
         u32 cycles_to_next_pixel;
-        if (m_clock_divider == 2)
+        if (clock_divider == 2)
             cycles_to_next_pixel = 2 - (m_hpos & 1);
-        else if (m_clock_divider == 4)
+        else if (clock_divider == 4)
             cycles_to_next_pixel = 4 - (m_hpos & 3);
         else
             cycles_to_next_pixel = 3 - (m_hpos % 3);
@@ -64,7 +87,7 @@ INLINE bool HuC6260::Clock(u32 cycles)
         if (pixel_clock)
         {
             m_pixel_x++;
-            if (m_pixel_x == k_huc6260_full_line_width[m_speed])
+            if (m_pixel_x == full_line_width)
                 m_pixel_x = 0;
 
             if (is_sgx)
