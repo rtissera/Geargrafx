@@ -277,12 +277,14 @@ void HuC6260::RenderFrameTemplate()
             }
             else
             {
-                u8* src = palette888 + (final_pixel * 4);
-                u8* dst = m_frame_buffer + frame_buffer_index;
-                dst[0] = src[0];
-                dst[1] = src[1];
-                dst[2] = src[2];
-                dst[3] = src[3];
+                // 32-bit load/store for the RGBA pixel.
+                // Requires m_frame_buffer and the palette to be 4-byte aligned
+                // (true for the RetroArch-allocated frame buffer and the
+                // static palette array); unaligned 32-bit access is not
+                // guaranteed on ARMv7 / RISC-V, so an unaligned caller-supplied
+                // frame buffer would be a portability hazard there.
+                u32 value = *reinterpret_cast<const u32*>(palette888 + (final_pixel * 4));
+                *reinterpret_cast<u32*>(m_frame_buffer + frame_buffer_index) = value;
             }
             frame_buffer_index += bytes_per_pixel;
         }
