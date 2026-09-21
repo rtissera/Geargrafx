@@ -54,16 +54,8 @@ INLINE bool HuC6260::Clock(u32 cycles)
         if (cycles_to_line_end > cycles)
             cycles_to_line_end = cycles;
 
-        u32 cycles_to_hsync = (m_hpos < HUC6260_HSYNC_END_HPOS)
-            ? (HUC6260_HSYNC_END_HPOS - m_hpos)
-            : (HUC6260_LINE_LENGTH - m_hpos + HUC6260_HSYNC_END_HPOS);
-        if (cycles_to_hsync > cycles)
-            cycles_to_hsync = cycles;
-
         if (cycles_to_line_end < step)
             step = cycles_to_line_end;
-        if (cycles_to_hsync < step)
-            step = cycles_to_hsync;
 
         bool pixel_clock = (step == cycles_to_next_pixel);
         m_hpos += step;
