@@ -262,12 +262,10 @@ void HuC6260::RenderFrameTemplate()
             }
             else
             {
-                u8* src = palette888 + ((final_pixel & 0x1FF) * 4);
-                u8* dst = m_frame_buffer + frame_buffer_index;
-                dst[0] = src[0];
-                dst[1] = src[1];
-                dst[2] = src[2];
-                dst[3] = src[3];
+                // Same 32-bit load/store as the non-SGX path below; both the
+                // palette and the frame buffer are 4-byte aligned.
+                u32 value = *reinterpret_cast<const u32*>(palette888 + ((final_pixel & 0x1FF) * 4));
+                *reinterpret_cast<u32*>(m_frame_buffer + frame_buffer_index) = value;
             }
             frame_buffer_index += bytes_per_pixel;
         }
