@@ -695,6 +695,24 @@ void HuC6270::RenderLine()
     }
 }
 
+namespace {
+struct BG_Bitplane_LUT
+{
+    u32 values[256];
+    BG_Bitplane_LUT()
+    {
+        for (int b = 0; b < 256; b++)
+        {
+            u32 v = 0;
+            for (int p = 0; p < 8; p++)
+                v |= ((b >> (7 - p)) & 1u) << (4 * p);
+            values[b] = v;
+        }
+    }
+};
+const BG_Bitplane_LUT k_bg_bitplane_lut;
+}
+
 void HuC6270::RenderBackground(int width)
 {
     int screen_reg = (m_latched_mwr >> 4) & 0x07;
@@ -728,20 +746,19 @@ void HuC6270::RenderBackground(int width)
         u8 byte4 = word_b >> 8;
 
         u16 color_table = (bat_entry >> 12) << 4;
-        int count = MIN(8 - (bg_x & 7), width - i);
-        int tile_x = 7 - (bg_x & 7);
-        int end = i + count;
+        int offset = bg_x & 7;
+        int count = MIN(8 - offset, width - i);
 
-        for (; i < end; i++)
-        {
-            u16 color = ((byte1 >> tile_x) & 0x01) |
-                    (((byte2 >> tile_x) & 0x01) << 1) |
-                    (((byte3 >> tile_x) & 0x01) << 2) |
-                    (((byte4 >> tile_x) & 0x01) << 3);
-            m_line_buffer[i] = color_table | color;
-            tile_x--;
-        }
+        u32 color = k_bg_bitplane_lut.values[byte1]
+                 | (k_bg_bitplane_lut.values[byte2] << 1)
+                 | (k_bg_bitplane_lut.values[byte3] << 2)
+                 | (k_bg_bitplane_lut.values[byte4] << 3);
+        color >>= 4 * offset;
 
+        for (int j = 0; j < count; j++)
+            m_line_buffer[i + j] = color_table | ((color >> (4 * j)) & 0x0F);
+
+        i += count;
         bg_x = (bg_x + count) & screen_size_x_mask;
     }
 }
