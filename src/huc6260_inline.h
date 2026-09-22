@@ -67,7 +67,7 @@ INLINE bool HuC6260::ClockTemplate(u32 cycles)
         else if (clock_divider == 4)
             cycles_to_next_pixel = 4 - (m_hpos & 3);
         else
-            cycles_to_next_pixel = 3 - (m_hpos % 3);
+            cycles_to_next_pixel = 3 - k_huc6260_mod3.v[m_hpos];
 
         u32 step = cycles_to_next_pixel;
         if (step > cycles)

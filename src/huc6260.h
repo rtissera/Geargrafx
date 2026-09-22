@@ -171,6 +171,17 @@ static const HuC6260::HuC6260_Speed k_huc6260_speed[4] = {
 
 static const int k_huc6260_total_lines[2] = { HUC6260_LINES - 1, HUC6260_LINES };
 static const int k_huc6260_full_line_width[4] = { 342, 455, 683, 683 };
+
+// m_hpos % 3 for every legal m_hpos. The divider-3 path needs 3 - (m_hpos % 3)
+// on every pixel, and m_hpos is clamped to [0, HUC6260_LINE_LENGTH - 1], so a
+// 1365-byte table replaces the magic-number division GCC emits for the modulo
+// (10 instructions per loop iteration) with a single L1-resident load.
+struct HuC6260_Mod3_Table
+{
+    u8 v[HUC6260_LINE_LENGTH];
+    HuC6260_Mod3_Table() { for (int i = 0; i < HUC6260_LINE_LENGTH; i++) v[i] = (u8)(i % 3); }
+};
+static const HuC6260_Mod3_Table k_huc6260_mod3;
 static const int k_huc6260_line_width[2][4] = {
     { 256, 341, 512, 512 },
     { 256 + 24, 341 + 32, 512 + 48, 512 + 48 } };
